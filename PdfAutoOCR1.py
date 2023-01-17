@@ -1,7 +1,7 @@
 import os
 import sys
 import cv2
-from PyPDF2 import PdfReader
+from PyPDF2 import PdfReader ,PdfMerger
 from pdf2image import convert_from_path, convert_from_bytes
 import numpy as np
 import matplotlib.pyplot as plt
@@ -33,10 +33,25 @@ with open(pdfFileName, "rb") as input:
     # pdfの総ページ数は？
     print("サンプル計算書(1).pdf has %d pages.\n" % len(reader.pages))
     # 指定のページのデータを読み込む
-    images = convert_from_path(pdfFileName,dpi=400,first_page=186,last_page=186)
+    images = convert_from_path(pdfFileName,dpi=600,first_page=185,last_page=188)
     # img_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # retval, img_binary = cv2.threshold(img_gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    
+    pdf_file_merger = PdfMerger()
+
+# pdf_file_merger.append('./1.pdf')
+
+# pdf_file_merger.append('./2.pdf')
+
+# pdf_file_merger.write('merge.pdf')
+
+# pdf_file_merger.close()
+
+    no =  0
     for image in images:
+        no += 1
+        print("page {0}".format(no))
+        print()
         img = np.array(image)
         img2 = img
         plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
@@ -148,13 +163,25 @@ with open(pdfFileName, "rb") as input:
         p0 = [0,0]
         p1 = [0,0]
         flag = False
-        limit = 0.90
+        limit = 0.95
+        box_builder2 = pyocr.builders.WordBoxBuilder(tesseract_layout=7)
+            
         for res in text_position:
             m = res.content
             print(m)
+            img3 = img2[res.position[0][1]-5:res.position[1][1]+5,res.position[0][0]-5:res.position[1][0]+5]
+            # plt.imshow(cv2.cvtColor(img3, cv2.COLOR_BGR2RGB))
+            # plt.show()
+            image3 = Image.fromarray(img3)
+            
+            # box_builder2 = pyocr.builders.WordBoxBuilder(tesseract_layout=7)
+            text_position2 = tool.image_to_string(image3,lang="eng",builder=box_builder2)
+            for res2 in text_position2:
+                print("?:"+res2.content)
+
             m = m.replace(",",".").replace("@","0.").replace("/","").replace("\\","").replace("©","0.").replace("Q","0")
             m = m.replace("Q","0").replace("U","0").replace("P","0").replace(' ', '').replace('ha', '42').replace('eo', '70').replace('oe', '0.')
-            m = m.replace("o","").replace("-","")
+            m = m.replace("o","").replace("-","").replace("«","")
             if m == "(0" or m == "0":
                 m = m + "."
             if m == "(0." or m == "0.":
@@ -175,27 +202,35 @@ with open(pdfFileName, "rb") as input:
                         a = float(t.replace("(","").replace(")",""))
                         print(a)
                         if a >= limit and a < 1.0 :
-                            # cv2.rectangle(img2,res.position[0],res.position[1],(255,0,0),1)
-                            cv2.rectangle(img2,p0,p1,(255,0,0),1)
-                        elif a >= 1.0 and a <=99.0:
+                            # cv2.rectangle(img2,res.position[0],res.position[1],(255,0,0),2)
+                            cv2.rectangle(img2,p0,p1,(255,0,0),2)
+                        elif a >= 1 and a <= 99:
                             b = a / 100.0
                             if b >= limit and b < 1.0 :
                                 # p2 = p0
                                 # p2[0] = p0[0]-(p1[0]-p0[0])
-                                cv2.rectangle(img2,p0,p1,(255,0,0),1)
+                                cv2.rectangle(img2,p0,p1,(255,0,0),2)
                         elif a >= 101 and a <=999:
                             b = a / 1000.0
                             if b >= limit and b < 1.0 :
                                 # p2 = p0
                                 # p2[0] = p0[0]-(p1[0]-p0[0])
-                                cv2.rectangle(img2,p0,p1,(255,0,0),1)
+                                cv2.rectangle(img2,p0,p1,(255,0,0),2)
         
-        plt.imshow(cv2.cvtColor(img2, cv2.COLOR_BGR2RGB))
-        plt.show()
+        # plt.imshow(cv2.cvtColor(img2, cv2.COLOR_BGR2RGB))
+        # plt.show()
 
         pil_image = Image.fromarray(img2)
         im_pdf = pil_image.convert("RGB")
-        im_pdf.save(r"test.pdf")
+        fname = "P"+str(no)+ ".pdf"
+        # im_pdf.save(r"test.pdf")
+        im_pdf.save(fname)
+        pdf_file_merger.append(fname)
+        os.remove(fname)
+
+
+    pdf_file_merger.write('test.pdf')
+    pdf_file_merger.close()
 
 # from pdfminer.pdfinterp import PDFResourceManager
 # from pdfminer.converter import TextConverter

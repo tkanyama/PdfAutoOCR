@@ -28,12 +28,18 @@ else:
     tool = tools[0]
 # print(text)
 pdfFileName = "サンプル計算書(1).pdf"
+dpi0 = 600
+dpi1 = 150
+Cdpi = dpi0 / dpi1
+start_page = 185
+end_page = 188
 with open(pdfFileName, "rb") as input:
     reader = PdfReader(input)
     # pdfの総ページ数は？
     print("サンプル計算書(1).pdf has %d pages.\n" % len(reader.pages))
     # 指定のページのデータを読み込む
-    images = convert_from_path(pdfFileName,dpi=600,first_page=185,last_page=188)
+    images = convert_from_path(pdfFileName,dpi=dpi0,first_page=start_page,last_page=end_page)
+    Out_image2 = convert_from_path(pdfFileName,dpi=dpi1,first_page=start_page,last_page=end_page)
     # img_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # retval, img_binary = cv2.threshold(img_gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     
@@ -154,7 +160,26 @@ with open(pdfFileName, "rb") as input:
         # 読み込んだページのテキストを抽出
         # print(extract_text(page))
         #文字と座標を読み取る
-        box_builder = pyocr.builders.WordBoxBuilder(tesseract_layout=11)
+
+        # tesseract_layout=No
+        # No の意味
+        # 0 オリエンテーションとスクリプト検出（OSD）のみ。
+        # 1 自動ページ分割とOSD。
+        # 2 自動ページ分割、ただしOSD、またはOCRはなし。(未実装)
+        # 3 完全自動ページ分割、ただしOSDなし。(初期設定)
+        # 4 サイズの異なるテキストが1列に並んでいると仮定します。
+        # 5 縦書きの一様なテキストブロックを想定しています。
+        # 6 一様なテキストブロックを想定しています。
+        # 7 画像を1つのテキスト行として扱う。
+        # 8 画像を1つの単語として扱う。
+        # 9 画像を円内の単一単語として扱う。
+        # 10 画像を1つの文字として扱う。
+        # 11 疎なテキスト。できるだけ多くのテキストを順不同に探します。
+        # 12 OSDでテキストを疎にする。
+        # 13 生の行。画像を1つのテキスト行として扱います。
+
+        # box_builder = pyocr.builders.WordBoxBuilder(tesseract_layout=11)
+        box_builder = pyocr.builders.WordBoxBuilder()
         text_position = tool.image_to_string(image2,lang="eng",builder=box_builder)
 
         #取得した座標と文字を出力するし、画像に枠を書き込む/\©
@@ -168,16 +193,18 @@ with open(pdfFileName, "rb") as input:
             
         for res in text_position:
             m = res.content
+            x = res.position
             print(m)
-            img3 = img2[res.position[0][1]-5:res.position[1][1]+5,res.position[0][0]-5:res.position[1][0]+5]
+            # print(x)
+            # img3 = img2[res.position[0][1]-5:res.position[1][1]+5,res.position[0][0]-5:res.position[1][0]+5]
             # plt.imshow(cv2.cvtColor(img3, cv2.COLOR_BGR2RGB))
             # plt.show()
-            image3 = Image.fromarray(img3)
+            # image3 = Image.fromarray(img3)
             
             # box_builder2 = pyocr.builders.WordBoxBuilder(tesseract_layout=7)
-            text_position2 = tool.image_to_string(image3,lang="eng",builder=box_builder2)
-            for res2 in text_position2:
-                print("?:"+res2.content)
+            # text_position2 = tool.image_to_string(image3,lang="eng",builder=box_builder2)
+            # for res2 in text_position2:
+            #     print("?:"+res2.content)
 
             m = m.replace(",",".").replace("@","0.").replace("/","").replace("\\","").replace("©","0.").replace("Q","0")
             m = m.replace("Q","0").replace("U","0").replace("P","0").replace(' ', '').replace('ha', '42').replace('eo', '70').replace('oe', '0.')
@@ -207,15 +234,17 @@ with open(pdfFileName, "rb") as input:
                         elif a >= 1 and a <= 99:
                             b = a / 100.0
                             if b >= limit and b < 1.0 :
-                                # p2 = p0
-                                # p2[0] = p0[0]-(p1[0]-p0[0])
+                                p02 = list(p0)
+                                p12 = list(p1)
+                                p02[0] = p02[0]- int((p12[0]-p02[0])*1.5)
+                                p0 = tuple(p02)
                                 cv2.rectangle(img2,p0,p1,(255,0,0),2)
-                        elif a >= 101 and a <=999:
-                            b = a / 1000.0
-                            if b >= limit and b < 1.0 :
-                                # p2 = p0
-                                # p2[0] = p0[0]-(p1[0]-p0[0])
-                                cv2.rectangle(img2,p0,p1,(255,0,0),2)
+                        # elif a >= 101 and a <=999:
+                        #     b = a / 1000.0
+                        #     if b >= limit and b < 1.0 :
+                        #         # p2 = p0
+                        #         # p2[0] = p0[0]-(p1[0]-p0[0])
+                        #         cv2.rectangle(img2,p0,p1,(255,0,0),2)
         
         # plt.imshow(cv2.cvtColor(img2, cv2.COLOR_BGR2RGB))
         # plt.show()

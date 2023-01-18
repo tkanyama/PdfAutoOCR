@@ -33,7 +33,7 @@ dpi1 = 150
 Cdpi = dpi0 / dpi1
 start_page = 185
 end_page = 188
-
+LineW = 1
 
 with open(pdfFileName, "rb") as input:
     reader = PdfReader(input)
@@ -47,15 +47,11 @@ with open(pdfFileName, "rb") as input:
     
     pdf_file_merger = PdfMerger()
 
-# pdf_file_merger.append('./1.pdf')
-
-# pdf_file_merger.append('./2.pdf')
-
-# pdf_file_merger.write('merge.pdf')
-
-# pdf_file_merger.close()
-
     no =  0
+    Total_Contents = []
+    Total_Positions = []
+    Total_PointN = []
+
     for image in images:
         no += 1
         print("page {0}".format(no))
@@ -80,8 +76,7 @@ with open(pdfFileName, "rb") as input:
         if lines is None:  # 直線が検出されない場合
             print('\n【直線の検出結果】')
             print('　直線は検出されませんでした。')
-            # file_name = os.path.splitext(os.path.basename(input_file))[0]
-            # cv2.imwrite(f'line_cut_{file_name}.png', img)
+            
         else:  # 直線が検出された場合
             print('\n【直線の検出結果】')
             print('　直線が検出されました。検出した直線を削除します。')
@@ -98,10 +93,7 @@ with open(pdfFileName, "rb") as input:
                 x1, y1, x2, y2 = line[0]
                 # 検出した直線を消す（白で線を引く）：2値化した際に黒で表示される
                 no_lines_img = cv2.line(img, (x1, y1), (x2, y2), (255, 255, 255), 1)
-
-                # 直線を除去した画像を元のファイル名の頭に「line_cut_」をつけて保存。「0」を指定でファイル名を取得
-                # file_name = os.path.splitext(os.path.basename(input_file))[0]
-                # cv2.imwrite(f'line_cut_{file_name}.png', no_lines_img)
+                
             print('\n【直線検出部位の削除結果：元の画像から削除】')
             print('　白色部分が検出した直線を消した場所（背景が白の場合は区別できません）。')
             # plt.imshow(cv2.cvtColor(no_lines_img, cv2.COLOR_BGR2RGB))
@@ -128,8 +120,7 @@ with open(pdfFileName, "rb") as input:
         if lines is None:  # 直線が検出されない場合
             print('\n【直線の検出結果】')
             print('　直線は検出されませんでした。')
-            # file_name = os.path.splitext(os.path.basename(input_file))[0]
-            # cv2.imwrite(f'line_cut_{file_name}.png', img)
+            
         else:  # 直線が検出された場合
             print('\n【直線の検出結果】')
             print('　直線が検出されました。検出した直線を削除します。')
@@ -147,9 +138,6 @@ with open(pdfFileName, "rb") as input:
                 # 検出した直線を消す（白で線を引く）：2値化した際に黒で表示される
                 no_lines_img = cv2.line(img, (x1, y1), (x2, y2), (255, 255, 255), 1)
 
-                # 直線を除去した画像を元のファイル名の頭に「line_cut_」をつけて保存。「0」を指定でファイル名を取得
-                # file_name = os.path.splitext(os.path.basename(input_file))[0]
-                # cv2.imwrite(f'line_cut_{file_name}.png', no_lines_img)
             print('\n【直線検出部位の削除結果：元の画像から削除】')
             print('　白色部分が検出した直線を消した場所（背景が白の場合は区別できません）。')
             # plt.imshow(cv2.cvtColor(no_lines_img, cv2.COLOR_BGR2RGB))
@@ -192,21 +180,14 @@ with open(pdfFileName, "rb") as input:
         flag = False
         limit = 0.95
         box_builder2 = pyocr.builders.WordBoxBuilder(tesseract_layout=7)
-            
+        
+        Contents = []
+        Positions = []
+        PointN = 0
         for res in text_position:
             m = res.content
             x = res.position
             print(m)
-            # print(x)
-            # img3 = img2[res.position[0][1]-5:res.position[1][1]+5,res.position[0][0]-5:res.position[1][0]+5]
-            # plt.imshow(cv2.cvtColor(img3, cv2.COLOR_BGR2RGB))
-            # plt.show()
-            # image3 = Image.fromarray(img3)
-            
-            # box_builder2 = pyocr.builders.WordBoxBuilder(tesseract_layout=7)
-            # text_position2 = tool.image_to_string(image3,lang="eng",builder=box_builder2)
-            # for res2 in text_position2:
-            #     print("?:"+res2.content)
 
             m = m.replace(",",".").replace("@","0.").replace("/","").replace("\\","").replace("©","0.").replace("Q","0")
             m = m.replace("Q","0").replace("U","0").replace("P","0").replace(' ', '').replace('ha', '42').replace('eo', '70').replace('oe', '0.')
@@ -220,10 +201,12 @@ with open(pdfFileName, "rb") as input:
             else:
                 t = t0 + m
                 t0 = ""
+
                 if flag == False:
                     p0 = res.position[0]
                 p1 = res.position[1]
                 flag = False
+
                 if re.search(r'\d', t):
                     # print(m)
                     # print(res.position)
@@ -231,63 +214,87 @@ with open(pdfFileName, "rb") as input:
                         a = float(t.replace("(","").replace(")",""))
                         print(a)
                         if a >= limit and a < 1.0 :
-                            # cv2.rectangle(img2,res.position[0],res.position[1],(255,0,0),2)
-                            cv2.rectangle(img2,p0,p1,(255,0,0),2)
+                            PointN += 1
+                            Contents.append(a)
+                            Positions.append([list(p0),list(p1)])
+                
                         elif a >= 1 and a <= 99:
                             b = a / 100.0
                             if b >= limit and b < 1.0 :
                                 p02 = list(p0)
                                 p12 = list(p1)
-                                p02[0] = p02[0]- int((p12[0]-p02[0])*1.5)
+                                p02[0] = p02[0]- int((p12[0]-p02[0])*1.4)
                                 p0 = tuple(p02)
-                                cv2.rectangle(img2,p0,p1,(255,0,0),2)
-                        # elif a >= 101 and a <=999:
-                        #     b = a / 1000.0
-                        #     if b >= limit and b < 1.0 :
-                        #         # p2 = p0
-                        #         # p2[0] = p0[0]-(p1[0]-p0[0])
-                        #         cv2.rectangle(img2,p0,p1,(255,0,0),2)
+                                PointN += 1
+                                Contents.append(a)
+                                Positions.append([list(p0),list(p1)])
         
         # plt.imshow(cv2.cvtColor(img2, cv2.COLOR_BGR2RGB))
         # plt.show()
 
-        pil_image = Image.fromarray(img2)
-        im_pdf = pil_image.convert("RGB")
-        fname = "P"+str(no)+ ".pdf"
-        # im_pdf.save(r"test.pdf")
-        im_pdf.save(fname)
-        pdf_file_merger.append(fname)
-        os.remove(fname)
+        box_builder2 = pyocr.builders.TextBuilder(tesseract_layout=7)
+        Positions2 = []
+        PointN2 = 0
+        Contents2 = []
+        for P in Positions:
+
+            img3 = img2[P[0][1]-5:P[1][1]+5,P[0][0]-5:P[1][0]+5]
+            
+            # plt.imshow(cv2.cvtColor(img3, cv2.COLOR_BGR2RGB))
+            # plt.show()
+            image3 = Image.fromarray(img3)
+            
+            t = tool.image_to_string(image3,lang="eng",builder=box_builder2)
+            print("?:" + t)
+            t = t.replace(",",".").replace("@","0.").replace("/","").replace("\\","").replace("©","0.").replace("Q","0")
+            t = t.replace("Q","0").replace("U","0").replace("P","0").replace(' ', '').replace('ha', '42').replace('eo', '70').replace('oe', '0.')
+            t = t.replace("o","").replace("-","").replace("«","")
+            
+            if re.search(r'\d', t):
+                # print(m)
+                # print(res.position)
+                if isfloat(t.replace("(","").replace(")","")):
+                    a = float(t.replace("(","").replace(")",""))
+                    print(a)
+                    if a >= limit and a < 1.0 :
+                        PointN2 += 1
+                        Contents2.append(a)
+                        Positions2.append(P)
+            
+                    elif a >= 1 and a <= 99:
+                        b = a / 100.0
+                        if b >= limit and b < 1.0 :
+                            PointN2 += 1
+                            Contents2.append(a)
+                            Positions2.append(P)
+        
+        print(Contents2)
+        Total_Contents.append(Contents2)
+        Total_Positions.append(Positions2)
+        Total_PointN.append(PointN2)
+
+    i = 0
+    for image in Out_image2:
+        if Total_PointN[i] > 0:
+            img2 = np.array(image)
+            Position = Total_Positions[i]
+            for P in Position:
+                P0 = [int(P[0][0]/Cdpi) - LineW*2,int(P[0][1]/Cdpi) - LineW*2]
+                P1 = [int(P[1][0]/Cdpi) + LineW,int(P[1][1]/Cdpi) + LineW]
+                cv2.rectangle(img2,tuple(P0),tuple(P1),(255,0,0),LineW)
+
+            pil_image = Image.fromarray(img2)
+            im_pdf = pil_image.convert("RGB")
+            fname = "P"+str(no)+ ".pdf"
+            # im_pdf.save(r"test.pdf")
+            im_pdf.save(fname)
+            pdf_file_merger.append(fname)
+            os.remove(fname)
+
+        i += 1
+
 
 
     pdf_file_merger.write('test2.pdf')
     pdf_file_merger.close()
 
-# from pdfminer.pdfinterp import PDFResourceManager
-# from pdfminer.converter import TextConverter
-# from pdfminer.pdfinterp import PDFPageInterpreter
-# from pdfminer.pdfpage import PDFPage
-# from pdfminer.layout import LAParams
-# from io import StringIO
-
-# pdf_file_path = "page179.pdf"
-
-# with open(pdf_file_path , "rb") as pdf_file: #ファイルオブジェクトを受け取り、変数「pdf_file」に代入。
-#     output = StringIO() #コンソールに出力されたテキストを取得するため、IOクラス「StringIO」使用
-#     resource_manager = PDFResourceManager()
-#     laparams = LAParams()
-#     #レイアウトの変更がなければデフォルトのままで
-#     text_converter = TextConverter(resource_manager, output, laparams=laparams)
-#     page_interpreter = PDFPageInterpreter(resource_manager, text_converter)
-
-#     for i_page in PDFPage.get_pages(pdf_file): #1ベージずづ処理 
-#         page_interpreter.process_page(i_page)
-#         # break
-#     # i_page = PDFPage.get_pages(pdf_file)
-#     # page_interpreter.process_page(i_page[179])
-
-#     output_text = output.getvalue()
-#     output.close()
-#     text_converter.close()
-
-# print(output_text)

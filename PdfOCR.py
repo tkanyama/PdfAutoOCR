@@ -33,6 +33,9 @@ class PdfOCR():
         self.dpi1 = 200      # 結果出力時に使用するDPI
         self.dpi2 = 600      # ページのタイトル（日本語）を読み取る場合のDPI
         self.Cdpi = self.dpi0 / self.dpi1      # 結果出力時に使用するDPIの比率
+        self.LineW = 2
+        self.Tx = int(10 * self.dpi1 / 25.4)
+        self.Ty = int(10 * self.dpi1 / 25.4)
 
 
     def pageRead(self):

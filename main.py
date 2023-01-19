@@ -27,5 +27,7 @@ if __name__ == '__main__':
     pdfFileName = "/Users/kanyama/VS Code/PdfAutoOCR/サンプル計算書(1).pdf"
     OcrTool = PdfOCR(pdfFileName)
     OcrTool.pageRead()
+    titles = OcrTool.titles
+    pageNumber = OcrTool.pageNumber
 
 

@@ -136,16 +136,17 @@ with open(pdf_file, "rb") as input:
     #         print('幅　: ', p_width, 'pt')
     #         print('高さ: ', p_height, 'pt')
 
-startpage = 242
-# endpage = PageMax
+startpage = 30
+endpage = PageMax
 # endpage = 182
-endpage = 246
+# endpage = 246
 
+pageResultData = []
 pageText = []
-pageOrigin = []
-pageCoefN = []
-pageCoef = []
-pageCoefOrigin = []
+# pageOrigin = []
+# pageCoefN = []
+# pageCoef = []
+# pageCoefOrigin = []
 pageNo = []
 limit1 = 0.95
 limit2 = 0.40
@@ -156,12 +157,13 @@ with open(pdf_file, 'rb') as fp:
             
     for page in PDFPage.get_pages(fp):
         pageI += 1
-        CoefN = []
-        Coef = []
-        CoefOrigin = []
+        # CoefN = []
+        # Coef = []
+        # CoefOrigin = []
 
         text = []
-        origin = []
+        # origin = []
+        ResultData = []
         print("page={}:".format(pageI), end="")
         if pageI == 1 :
             # print(pageI)
@@ -169,8 +171,11 @@ with open(pdf_file, 'rb') as fp:
             # kFlag = True
             # mFlag = True
         else:
-            if pageI < startpage:continue
-            if pageI > endpage:break
+            if pageI < startpage:
+                print()
+                continue
+            if pageI > endpage:
+                break
             # print(pageI)
             pageFlag = False
             # kFlag = False
@@ -294,12 +299,13 @@ with open(pdf_file, 'rb') as fp:
                                         if height2 < 7.0 : height2 = 7.0
                                         width2 =  width/n2
                                         text.append(d2)
-                                        origin.append([xx0, yy0, width2, height2])
+                                        # origin.append([xx0, yy0, width2, height2])
+                                        ResultData.append([a,[xx0, yy0, width2, height2],False])
                                         flag = True
                                         pageFlag = True
-                                        CoefN.append(False)
-                                        Coef = [[0.0]]
-                                        CoefOrigin = [[0.0,0.0]]
+                                        # CoefN.append(False)
+                                        # Coef = [[0.0]]
+                                        # CoefOrigin = [[0.0,0.0]]
 
                         if flag :
                             # print("-------")
@@ -369,11 +375,12 @@ with open(pdf_file, 'rb') as fp:
                                         if height2 < 7.0 : height2 = 7.0
                                         width2 = x1 - QDL_x0
                                         text.append(c1)
-                                        origin.append([xx0, yy0, width2, height2])
+                                        # origin.append([xx0, yy0, width2, height2])
+                                        ResultData.append([c1,[xx0, yy0, width2, height2],True])
                                         pageFlag = True
-                                        CoefN.append(True)
-                                        Coef.append(c1)
-                                        CoefOrigin.append([ xx0 + width2 , yy0 + height2 ])
+                                        # CoefN.append(True)
+                                        # Coef.append(c1)
+                                        # CoefOrigin.append([ xx0 + width2 , yy0 + height2 ])
 
                             # flag = False
                             # i=0
@@ -427,12 +434,13 @@ with open(pdf_file, 'rb') as fp:
         if pageFlag : # and kFlag and mFlag:
             pageNo.append(pageI)
             pageText.append(text)
-            pageOrigin.append(origin)
+            # pageOrigin.append(origin)
+            pageResultData.append(ResultData)
 
-            if CoefN:
-                pageCoefN.append(CoefN)
-                pageCoef.append(Coef)
-                pageCoefOrigin.append(CoefOrigin)
+            # if CoefN:
+            #     pageCoefN.append(CoefN)
+            #     pageCoef.append(Coef)
+            #     pageCoefOrigin.append(CoefOrigin)
 
 
 device.close()
@@ -453,7 +461,8 @@ for pageI in range(len(pageNo)):
     pageSizeX = float(PaperSize[pageN-1][0])
     pageSizeY = float(PaperSize[pageN-1][1])
     page = pdf.pages[pageN - 1]
-    origins = pageOrigin[pageI]
+    # origins = pageOrigin[pageI]
+    ResultData = pageResultData[pageI]
     # PDFデータへのページデータの展開
     pp = pagexobj(page) #ページデータをXobjへの変換
     rl_obj = makerl(cc, pp) # ReportLabオブジェクトへの変換  
@@ -462,16 +471,21 @@ for pageI in range(len(pageNo)):
     if pageN == 1:
         cc.setFillColor("red")
         font_name = "ipaexg"
-        cc.setFont(font_name, 24)
+        cc.setFont(font_name, 20)
         cc.drawString(20 * mm,  pageSizeY - 40 * mm, "検定比（{}以上）の検索結果".format(limit1))
     else:
-        pn = len(origins)
+        # pn = len(origins)
+        pn = len(ResultData)
         cc.setFillColor("red")
         font_name = "ipaexg"
-        cc.setFont(font_name, 16)
+        cc.setFont(font_name, 12)
         t2 = "検索個数 = {}".format(pn)
         cc.drawString(20 * mm,  pageSizeY - 15 * mm, t2)
-        for origin in origins:
+        # for origin in origins:
+        for R1 in ResultData:
+            a = R1[0]
+            origin = R1[1]
+            flag = R1[2]
             x0 = origin[0]
             y0 = origin[1]
             width = origin[2]
@@ -482,20 +496,27 @@ for pageI in range(len(pageNo)):
             cc.setStrokeColorRGB(1.0, 0, 0)
             cc.rect(x0, y0, width, height, fill=0)
 
-        
-        CoefN2 = pageCoefN[pageI]
-        if CoefN2:
-            Coef2 = pageCoef[pageI]
-            origin2 = pageCoefOrigin[pageI]
-            j = 0
-            for c1 in Coef2:
-                j += 1
-                origin3 = origin2[j-1]
+            if flag:
                 cc.setFillColor("red")
                 font_name = "ipaexg"
-                cc.setFont(font_name, 8)
-                t2 = "C={:.2f}".format(c1)
-                cc.drawString(origin3[0],  origin3[1], t2)
+                cc.setFont(font_name, 7)
+                t2 = " {:.2f}".format(a)
+                cc.drawString(origin[0]+origin[2], origin[1]+origin[3], t2)
+
+        
+        # CoefN2 = pageCoefN[pageI]
+        # if CoefN2:
+        #     Coef2 = pageCoef[pageI]
+        #     origin2 = pageCoefOrigin[pageI]
+        #     j = 0
+        #     for c1 in Coef2:
+        #         j += 1
+        #         origin3 = origin2[j-1]
+        #         cc.setFillColor("red")
+        #         font_name = "ipaexg"
+        #         cc.setFont(font_name, 8)
+        #         t2 = "C={:.2f}".format(c1)
+        #         cc.drawString(origin3[0],  origin3[1], t2)
 
     # ページデータの確定
     cc.showPage()

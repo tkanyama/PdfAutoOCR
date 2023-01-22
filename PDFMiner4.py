@@ -50,7 +50,7 @@ print(pdfmetrics.getRegisteredFontNames())
 
 # PRG2: 対象PDFファイル設定
 pdf_file = './サンプル計算書(1).pdf'
-pdf_out_file = 'サンプル計算書(1)のコピー.pdf'
+pdf_out_file = 'サンプル計算書(1)[検索結果].pdf'
 
 with open(pdf_file, "rb") as input:
     reader = PR2(input)

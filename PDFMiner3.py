@@ -246,7 +246,7 @@ for pageI in range(len(pageNo)):
         cc.setFillColor("red")
         font_name = "ipaexg"
         cc.setFont(font_name, 24)
-        cc.drawString(20 * mm,  pageSizeY - 40 * mm, "検定比（{}以上）の検索結果".format(limit))
+        cc.drawString(20 * mm,  pageSizeY - 40 * mm, "検定比m（{}以上の検索結果".format)
     else:
         pn = len(origins)
         cc.setFillColor("red")

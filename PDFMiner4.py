@@ -1,28 +1,10 @@
-# import io
-# from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
-# from pdfminer.converter import PDFPageAggregator
-# from pdfminer.pdfpage import PDFPage
-# from pdfminer.layout import LAParams
 
-# resourceManager = PDFResourceManager()
-# # 引数にLAParamsを追加
-# device = PDFPageAggregator(resourceManager, laparams=LAParams())
-
-# with open('./page179.pdf', 'rb') as fp:
-#     interpreter = PDFPageInterpreter(resourceManager, device)
-#     for page in PDFPage.get_pages(fp):
-#         interpreter.process_page(page)
-#         layout = device.get_result()
-#         for lt in layout:
-#             print('{}, x0={:.2f}, x1={:.2f}, y0={:.2f}, y1={:.2f}, width={:.2f}, height={:.2f}'.format(
-#                     lt.get_text().strip(), lt.x0, lt.x1, lt.y0, lt.y1, lt.width, lt.height))
-# device.close()
 
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.converter import PDFPageAggregator
 from pdfminer.pdfpage import PDFPage
-# from pdfminer.layout import LAParams, LTTextContainer,LTChar
-from pdfminer.layout import LAParams, LTTextContainer, LTContainer, LTTextBox, LTTextLine, LTChar
+from pdfminer.layout import LAParams, LTTextContainer
+# from pdfminer.layout import LAParams, LTTextContainer, LTContainer, LTTextBox, LTTextLine, LTChar
 
 from pdfrw import PdfReader
 from pdfrw.buildxobj import pagexobj
@@ -33,9 +15,9 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.units import mm
 import time
-import PyPDF2.papersizes
+# import PyPDF2.papersizes
 from PyPDF2 import PdfReader as PR2
-import copy
+# import copy
 
 def isfloat(s):  # 浮動小数点数値を表しているかどうかを判定
     try:
@@ -53,36 +35,6 @@ def isint(s):  # 整数を表しているかどうかを判定
     else:
         return True
 
-# def find_textboxes(layout_obj):
-#     if isinstance(layout_obj, LTTextBox):
-#         return [layout_obj]
-#     if isinstance(layout_obj, LTContainer):
-#         boxes = []
-#         for child in layout_obj:
-#             boxes.extend(find_textboxes(child))
-#         return boxes
-#     return []
-
-# def find_textlines(layout_obj):
-#     if isinstance(layout_obj, LTTextLine):
-#         return [layout_obj]
-#     if isinstance(layout_obj, LTTextBox):
-#         lines = []
-#         for child in layout_obj:
-#             lines.extend(find_textlines(child))
-#         return lines
-#     return []
-
-# def find_characters(layout_obj):
-#     if isinstance(layout_obj, LTChar):
-#         return [layout_obj]
-#     if isinstance(layout_obj, LTTextLine):
-#         characters = []
-#         for child in layout_obj:
-#             characters.extend(find_characters(child))
-#         return characters
-#     return []
-
 time_sta = time.time()
 
 resourceManager = PDFResourceManager()
@@ -95,9 +47,6 @@ IPAEXG_TTF = "/Library/Fonts/GenShinGothic-Monospace-Medium.ttf"
 pdfmetrics.registerFont(TTFont('GenShinGothic', GEN_SHIN_GOTHIC_MEDIUM_TTF))
 pdfmetrics.registerFont(TTFont('ipaexg', IPAEXG_TTF))
 print(pdfmetrics.getRegisteredFontNames())
-
-# font_size = 20
-# c.setFont('GenShinGothic', font_size)
 
 # PRG2: 対象PDFファイル設定
 pdf_file = './サンプル計算書(1).pdf'
@@ -115,38 +64,11 @@ with open(pdf_file, "rb") as input:
         y1 = page.mediabox.upper_right[1]
         PaperSize.append([x1 - x0 , y1 - y0])
 
-    # pdf_reader = PyPDF2.PdfReader(pdf_file)
-    
-    # for i in range(pdf_reader.getNumPages()):
-    #     # 同じページのオブジェクトを２つ用意
-    #     p1 = pdf_reader.getPage(i)
-    #     p2 = copy.copy(p1)
-    #     # 原稿の左下と右上の座標を取得（用紙サイズ）
-    #     x0 = p1.mediaBox.getLowerLeft_x()
-    #     y0 = p1.mediaBox.getLowerLeft_y()
-    #     x1 = p1.mediaBox.getUpperRight_x()
-    #     y1 = p1.mediaBox.getUpperRight_y()
-    #     for page in range(PageMax):
-    #         p = reader.getPage(page+1)
-    #         p_size = p.mediaBox
-    #         p_width = p_size.getWidth()
-    #         p_height = p_size.getHeight()
-    #         print(f'\nページ{page+1}')
-    #         print('RectangleObject: ', p_size)
-    #         print('幅　: ', p_width, 'pt')
-    #         print('高さ: ', p_height, 'pt')
-
 startpage = 30
 endpage = PageMax
-# endpage = 182
-# endpage = 246
 
 pageResultData = []
 pageText = []
-# pageOrigin = []
-# pageCoefN = []
-# pageCoef = []
-# pageCoefOrigin = []
 pageNo = []
 limit1 = 0.95
 limit2 = 0.40
@@ -157,19 +79,13 @@ with open(pdf_file, 'rb') as fp:
             
     for page in PDFPage.get_pages(fp):
         pageI += 1
-        # CoefN = []
-        # Coef = []
-        # CoefOrigin = []
 
         text = []
-        # origin = []
         ResultData = []
         print("page={}:".format(pageI), end="")
         if pageI == 1 :
-            # print(pageI)
             pageFlag = True
-            # kFlag = True
-            # mFlag = True
+            
         else:
             if pageI < startpage:
                 print()
@@ -178,14 +94,9 @@ with open(pdf_file, 'rb') as fp:
                 break
             # print(pageI)
             pageFlag = False
-            # kFlag = False
-            # mFlag = False
 
             interpreter.process_page(page)
             layout = device.get_result()
-            # boxes = find_textboxes(layout)
-            # for box in boxes:
-            #     print(box.get_text())
 
             QDL_Flag = False
             検定表_Flag = False
@@ -198,11 +109,6 @@ with open(pdf_file, 'rb') as fp:
                 # LTTextContainerの場合だけ標準出力
                 if isinstance(lt, LTTextContainer):
                     texts = lt.get_text()
-                    # print(texts)
-                    # if "QDL" in texts:
-                    #     QDL_Flag = True
-                    # if "検定表" in texts :
-                    #     検定表_Flag = True
                     if "柱の断面検定表"in texts :
                         柱_Flag = True
                     if  "梁の断面検定表"in texts:
@@ -223,17 +129,12 @@ with open(pdf_file, 'rb') as fp:
         
             if mode == "" :
                 print("Pass")
-                # pageCoefN.append(CoefN)
-                # pageCoef.append(Coef)
-                # pageCoefOrigin.append(CoefOrigin)
                 continue
             else:
                 print(mode)
 
             
             if mode == "検定比図" or mode == "柱の検定表" or mode == "梁の検定表": 
-                # kFlag = False
-                # mFlag = False     
                 
                 for lt in layout:
                     # LTTextContainerの場合だけ標準出力
@@ -267,14 +168,13 @@ with open(pdf_file, 'rb') as fp:
                         width = lt.width
                         height = lt.height
 
-
                         flag = False
                         i = 0
                         n1 = 0
                         for data in data2:
                             if not("QAL" in data or "QAS" in data):
                                 n1 += 1
-                        # n1 = len(data2)
+
                         n2 = 0
                         for d1 in data2:
                             if len(d1) > n2 : n2 = len(d1)
@@ -299,13 +199,9 @@ with open(pdf_file, 'rb') as fp:
                                         if height2 < 7.0 : height2 = 7.0
                                         width2 =  width/n2
                                         text.append(d2)
-                                        # origin.append([xx0, yy0, width2, height2])
                                         ResultData.append([a,[xx0, yy0, width2, height2],False])
                                         flag = True
                                         pageFlag = True
-                                        # CoefN.append(False)
-                                        # Coef = [[0.0]]
-                                        # CoefOrigin = [[0.0,0.0]]
 
                         if flag :
                             # print("-------")
@@ -375,73 +271,13 @@ with open(pdf_file, 'rb') as fp:
                                         if height2 < 7.0 : height2 = 7.0
                                         width2 = x1 - QDL_x0
                                         text.append(c1)
-                                        # origin.append([xx0, yy0, width2, height2])
                                         ResultData.append([c1,[xx0, yy0, width2, height2],True])
                                         pageFlag = True
-                                        # CoefN.append(True)
-                                        # Coef.append(c1)
-                                        # CoefOrigin.append([ xx0 + width2 , yy0 + height2 ])
 
-                            # flag = False
-                            # i=0
-                            # n1 = len(data2)
-                            # n2 = 0
-                            # for d1 in data2:
-                            #     if len(d1) > n2 : n2 = len(d1)
-
-                            # for d1 in data2:
-                            #     i += 1
-                            #     j = 0
-                                
-                            #     for d2 in d1:
-                            #         # if "QDL" in d2:
-                            #         #     print(d2)
-
-                            #         # if "検定比" in d2:
-                            #         #     kFlag = True
-                            #         # if "柱"in d2 or "梁"in d2 or "壁"in d2 or "検定比図"in d2:
-                            #         #     mFlag = True
-                                    
-
-                            #         j += 1
-                            #         t = d2.replace("(","").replace(")","")
-                            #         if isfloat(t):
-                            #             a = float(t)
-                            #             if a >= limit and a < 1.0 :
-                            #                 xx0 = x0 + (j-1)*width/n2
-                            #                 yy0 = y1 - height * i / n1
-                            #                 height2 = height / n1
-                            #                 if height2 < 7.0 : height2 = 7.0
-                            #                 width2 =  width/n2
-                            #                 text.append(d2)
-                            #                 origin.append([xx0, yy0, width2, height2])
-                            #                 flag = True
-                            #                 pageFlag = True
-
-                            # if flag :
-                            #     print("-------")
-                            #     print(datas)
-                            #     print("-------")
-                            #     print('{}, x0={:.2f}, x1={:.2f}, y0={:.2f}, y1={:.2f}, width={:.2f}, height={:.2f}'.format(
-                            #         lt.get_text().strip(), lt.x0, lt.x1, lt.y0, lt.y1, lt.width, lt.height))
-                            #     print("-------")
-
-        # pageCoefN.append(CoefN)
-        # pageCoef.append(Coef)
-        # pageCoefOrigin.append([])
-                
-
-        if pageFlag : # and kFlag and mFlag:
+        if pageFlag : 
             pageNo.append(pageI)
             pageText.append(text)
-            # pageOrigin.append(origin)
             pageResultData.append(ResultData)
-
-            # if CoefN:
-            #     pageCoefN.append(CoefN)
-            #     pageCoef.append(Coef)
-            #     pageCoefOrigin.append(CoefOrigin)
-
 
 device.close()
 print(pageText)
@@ -461,7 +297,6 @@ for pageI in range(len(pageNo)):
     pageSizeX = float(PaperSize[pageN-1][0])
     pageSizeY = float(PaperSize[pageN-1][1])
     page = pdf.pages[pageN - 1]
-    # origins = pageOrigin[pageI]
     ResultData = pageResultData[pageI]
     # PDFデータへのページデータの展開
     pp = pagexobj(page) #ページデータをXobjへの変換
@@ -474,14 +309,12 @@ for pageI in range(len(pageNo)):
         cc.setFont(font_name, 20)
         cc.drawString(20 * mm,  pageSizeY - 40 * mm, "検定比（{}以上）の検索結果".format(limit1))
     else:
-        # pn = len(origins)
         pn = len(ResultData)
         cc.setFillColor("red")
         font_name = "ipaexg"
         cc.setFont(font_name, 12)
         t2 = "検索個数 = {}".format(pn)
         cc.drawString(20 * mm,  pageSizeY - 15 * mm, t2)
-        # for origin in origins:
         for R1 in ResultData:
             a = R1[0]
             origin = R1[1]
@@ -502,21 +335,6 @@ for pageI in range(len(pageNo)):
                 cc.setFont(font_name, 7)
                 t2 = " {:.2f}".format(a)
                 cc.drawString(origin[0]+origin[2], origin[1]+origin[3], t2)
-
-        
-        # CoefN2 = pageCoefN[pageI]
-        # if CoefN2:
-        #     Coef2 = pageCoef[pageI]
-        #     origin2 = pageCoefOrigin[pageI]
-        #     j = 0
-        #     for c1 in Coef2:
-        #         j += 1
-        #         origin3 = origin2[j-1]
-        #         cc.setFillColor("red")
-        #         font_name = "ipaexg"
-        #         cc.setFont(font_name, 8)
-        #         t2 = "C={:.2f}".format(c1)
-        #         cc.drawString(origin3[0],  origin3[1], t2)
 
     # ページデータの確定
     cc.showPage()

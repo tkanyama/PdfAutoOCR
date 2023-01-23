@@ -16,10 +16,13 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.units import mm
 import time
 # import PyPDF2.papersizes
-from PyPDF2 import PdfReader as PR2
+from PyPDF2 import PdfReader as PR2 # 名前が上とかぶるので別名を使用
 # import copy
 
-def isfloat(s):  # 浮動小数点数値を表しているかどうかを判定
+#============================================================================
+#  浮動小数点数値を表しているかどうかを判定する関数
+#============================================================================
+def isfloat(s):  
     try:
         float(s)  # 文字列を実際にfloat関数で変換してみる
     except ValueError:
@@ -27,7 +30,10 @@ def isfloat(s):  # 浮動小数点数値を表しているかどうかを判定
     else:
         return True
 
-def isint(s):  # 整数を表しているかどうかを判定
+#============================================================================
+#  整数を表しているかどうかを判定する関数
+#============================================================================
+def isint(s):  
     try:
         int(s)  # 文字列を実際にint関数で変換してみる
     except ValueError:
@@ -35,28 +41,35 @@ def isint(s):  # 整数を表しているかどうかを判定
     else:
         return True
 
-time_sta = time.time()
 
-resourceManager = PDFResourceManager()
-device = PDFPageAggregator(resourceManager, laparams=LAParams())
+#============================================================================
+#  プログラムの開始
+#============================================================================
 
+time_sta = time.time() # 開始時刻の記録
+
+
+# 源真ゴシック等幅フォント
 GEN_SHIN_GOTHIC_MEDIUM_TTF = "/Library/Fonts/GenShinGothic-Monospace-Medium.ttf"
-IPAEXG_TTF = "/Library/Fonts/GenShinGothic-Monospace-Medium.ttf"
+# IPAexゴシックフォント
+IPAEXG_TTF = "/Library/Fonts/ipaexg.ttf"
 
 # フォント登録
 pdfmetrics.registerFont(TTFont('GenShinGothic', GEN_SHIN_GOTHIC_MEDIUM_TTF))
 pdfmetrics.registerFont(TTFont('ipaexg', IPAEXG_TTF))
 print(pdfmetrics.getRegisteredFontNames())
 
-# PRG2: 対象PDFファイル設定
+# 対象PDFファイル設定
 pdf_file = './サンプル計算書(1).pdf'
+# 検出結果ファイル設定
 pdf_out_file = 'サンプル計算書(1)[検索結果].pdf'
 
+# PyPDF2のツールを使用してPDFのページ情報を読み取る。
 with open(pdf_file, "rb") as input:
     reader = PR2(input)
-    PageMax = len(reader.pages)
+    PageMax = len(reader.pages)     # PDFのページ数
     PaperSize = []
-    for page in reader.pages:
+    for page in reader.pages:       # 各ページの用紙サイズの読取り
         p_size = page.mediabox
         x0 = page.mediabox.lower_left[0]
         y0 = page.mediabox.lower_left[1]
@@ -64,13 +77,18 @@ with open(pdf_file, "rb") as input:
         y1 = page.mediabox.upper_right[1]
         PaperSize.append([x1 - x0 , y1 - y0])
 
-startpage = 30
-endpage = PageMax
+
+# PDFMinerのツールの準備
+resourceManager = PDFResourceManager()
+device = PDFPageAggregator(resourceManager, laparams=LAParams())
+
+startpage = 30      # 検索を開始する最初のページ
+endpage = PageMax   # 検索を終了する最後のページ
 
 pageResultData = []
-pageText = []
+# pageText = []
 pageNo = []
-limit1 = 0.95
+limit1 = 0.70
 limit2 = 0.40
 
 with open(pdf_file, 'rb') as fp:
@@ -80,7 +98,7 @@ with open(pdf_file, 'rb') as fp:
     for page in PDFPage.get_pages(fp):
         pageI += 1
 
-        text = []
+        # text = []
         ResultData = []
         print("page={}:".format(pageI), end="")
         if pageI == 1 :
@@ -198,7 +216,7 @@ with open(pdf_file, 'rb') as fp:
                                         height2 = height / n1
                                         if height2 < 7.0 : height2 = 7.0
                                         width2 =  width/n2
-                                        text.append(d2)
+                                        # text.append(d2)
                                         ResultData.append([a,[xx0, yy0, width2, height2],False])
                                         flag = True
                                         pageFlag = True
@@ -270,17 +288,17 @@ with open(pdf_file, 'rb') as fp:
                                         height2 = QDL_height / 2
                                         if height2 < 7.0 : height2 = 7.0
                                         width2 = x1 - QDL_x0
-                                        text.append(c1)
+                                        # text.append(c1)
                                         ResultData.append([c1,[xx0, yy0, width2, height2],True])
                                         pageFlag = True
 
         if pageFlag : 
             pageNo.append(pageI)
-            pageText.append(text)
+            # pageText.append(text)
             pageResultData.append(ResultData)
 
 device.close()
-print(pageText)
+# print(pageText)
 
 in_path = pdf_file
 out_path = pdf_out_file

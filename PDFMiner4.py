@@ -1,23 +1,27 @@
 
-
+# pip install pdfminer
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.converter import PDFPageAggregator
 from pdfminer.pdfpage import PDFPage
 from pdfminer.layout import LAParams, LTTextContainer
 # from pdfminer.layout import LAParams, LTTextContainer, LTContainer, LTTextBox, LTTextLine, LTChar
 
+# pip install pdfrw
 from pdfrw import PdfReader
 from pdfrw.buildxobj import pagexobj
 from pdfrw.toreportlab import makerl
+
+# pip install reportlab
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.units import mm
-import time
-# import PyPDF2.papersizes
+
+# pip install PyPDF2
 from PyPDF2 import PdfReader as PR2 # 名前が上とかぶるので別名を使用
-# import copy
+
+import time
 
 #============================================================================
 #  浮動小数点数値を表しているかどうかを判定する関数

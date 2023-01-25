@@ -89,9 +89,9 @@ resourceManager = PDFResourceManager()
 device = PDFPageAggregator(resourceManager, laparams=LAParams())
 device2 = PDFPageAggregator(resourceManager)
 
-startpage = 100      # 検索を開始する最初のページ
+startpage = 192      # 検索を開始する最初のページ
 # endpage = PageMax   # 検索を終了する最後のページ
-endpage = 300
+endpage = 193
 
 pageResultData = []
 # pageText = []
@@ -188,7 +188,7 @@ with open(pdf_file, 'rb') as fp:
                                     else:
                                         data2.append([""])
 
-                        words = lt.get_text().split()
+                        # words = lt.get_text().split()
                         x0 = lt.x0
                         x1 = lt.x1
                         y0 = lt.y0
@@ -199,7 +199,9 @@ with open(pdf_file, 'rb') as fp:
                         flag = False
                         i = 0
                         n1 = 0
+                        # n1 = len(data2)
                         for data in data2:
+                            # n1 += 1
                             if not("QAL" in data or "QAS" in data):
                                 n1 += 1
 
@@ -220,14 +222,15 @@ with open(pdf_file, 'rb') as fp:
                                     a = float(t)
                                     if a >= limit1 and a < 1.0 :
                                         xx0 = x0 + (j-1)*width/n2
-                                        if mode == "柱の検定表" and j == 1 : 
-                                            xx0 += 5.0
+                                        # if mode == "柱の検定表" and j == 1 : 
+                                        #     xx0 += 5.0
                                         yy0 = y1 - height * i / n1
                                         height2 = height / n1
                                         if height2 < 7.0 : height2 = 7.0
                                         width2 =  width/n2
                                         # text.append(d2)
                                         ResultData.append([a,[xx0, yy0, width2, height2],False])
+                                        # ResultData.append([a,[x0, y0, width, height],False])
                                         # ResultData.append([a,[x0, x1, y0, y1],False,t])
                                         flag = True
                                         pageFlag = True
@@ -307,7 +310,6 @@ with open(pdf_file, 'rb') as fp:
         if pageFlag : 
             pageNo.append(pageI)
             # pageText.append(text)
-            pageResultData.append(ResultData)
             ResultData2 = []
                 
             if mode != "壁の検定表" and pageI > 1:
@@ -320,7 +322,7 @@ with open(pdf_file, 'rb') as fp:
                         # print('{}, x0={:.2f}, x1={:.2f}, y0={:.2f}, y1={:.2f}, width={:.2f}, height={:.2f}'.format(
                         #     lt.get_text(), lt.x0, lt.x1, lt.y0, lt.y1, lt.width, lt.height))
                         cfalg = False
-                        if isint(char1) or char1 == "." or char1 == " " or char1 == "(" or char1 == ")":
+                        if isint(char1) or char1 == "." or char1 == "(" or char1 == ")":
                             CharData.append([char1, lt.x0, lt.x1, lt.y0, lt.y1])
                         # CharData.append([char1, lt.x0, lt.x1, lt.y0, lt.y1])
                 
@@ -379,110 +381,50 @@ with open(pdf_file, 'rb') as fp:
                             CharData4.append(Fline)
                         # print(CharData4)
 
-                        CharData5 = []
+                        # CharData5 = []
                         t1 = []
                         for F1 in CharData4:
+                            # if F1[0] != " ":
+                            xd = 3
+                            # else:
+                            #     xd = 0
                             CX = []
-                            xxx0 = 100000.0
-                            yyy0 = 100000.0
-                            xxx1 = -100000.0
-                            yyy1 = -100000.0
                             
                             for F2 in F1:
                                 CX.append(F2[1])
-                                if F2[1] < xxx0: xxx0 = F2[1]
-                                if F2[2] < yyy0: yyy0 = F2[2]
-                                if F2[3] > xxx1: xxx1 = F2[3]
-                                if F2[4] > yyy1: yyy1 = F2[4]
-                                
-
+                            
                             x=np.argsort(np.array(CX))
                             # print(y)
                             F3 = []
                             for i in range(len(x)):
                                 F3.append(F1[x[i]])
                             t2 = ""
+                            xxx0 = 100000.0
+                            yyy0 = 100000.0
+                            xxx1 = -100000.0
+                            yyy1 = -100000.0
                             for f4 in F3:
                                 t2 += f4[0]
-                            CharData5.append(F3)
+                                if f4[1] < xxx0: xxx0 = f4[1]
+                                if f4[2] > xxx1: xxx1 = f4[2]
+                                if f4[3] < yyy0: yyy0 = f4[3]
+                                if f4[4] > yyy1: yyy1 = f4[4]
+                            xxx0 -= xd
+                            xxx1 += xd
+                            ww1 = xxx1-xxx0
+                            hh1 = yyy1-yyy0
                             t1.append(t2)
                             # print(t2)
-
-                            if val == float(t2.replace("(","").replace(")","")):
+                        
+                            if val == float(t2.replace("(","").replace(")","").replace(" ","")):
                                 # R2 = [val ,[xxx0,yyy0,xxx1-xxx0,yyy1-yyy1],flag]
                                 # ResultData2.append[R2]
-                                ResultData2.append([val ,[xxx0,yyy0,xxx1-xxx0,yyy1-yyy1],flag])
+                                ResultData2.append([val ,[xxx0,yyy0,ww1,hh1],flag])
                                             
                                 break
-                        
-                
-
-                ResultData = ResultData2
-
-
-
-                    # FChar = []
-                    # CY = []
-                    # for ch in list(char1):
-                    #     for cdata in CharData:
-                    #         char2 = cdata[0]
-                    #         x0 = cdata[1]
-                    #         x1 = cdata[2]
-                    #         y0 = cdata[3]
-                    #         y1 = cdata[4]
-                    #         if ch==char2 and x0>=xx0 and x1<=xx1 and y0>=yy0 and y1<=yy1:
-                    #             FChar.append(cdata)
-                    #             CY.append(y0)
-                    # print(FChar)
-                    # # 座標 y0のソートインデックッスを取得（降順）
-                    # y=np.argsort(np.array(CY))[::-1]
-                    # # print(y)
-                    # FChar2 = []
-                    # # インデックスを用いて並べ替え
-                    # for i in range(len(y)):
-                    #     FChar2.append(FChar[y[i]])
-                    # # for ff in FChar2:
-                    # #     print(ff[0], ff[1], ff[2], ff[3, ff[4]])
-                        
-                    # # print(FChar2)
-                    # # 同じy座標でグリープ化
-                    # FChar3 = []
-                    # gy = FChar2[0][3]
-                    # Fline = []
-                    # for f in FChar2:
-                    #     if f[3]== gy:
-                    #         Fline.append(f)
-                    #     else:
-                    #         FChar3.append(Fline)
-                    #         gy = f[3]
-                    #         Fline = []
-                    # FChar3.append(Fline)
-                    # print(FChar3)
-
-                    # # グループ化した配列毎にｘ座標で並び替え（昇順）
-                    # Fcar4 = []
-                    # for F1 in FChar3:
-                    #     CX = []
-                    #     for F2 in F1:
-                    #         CX.append(F2[1])
-                    #     x=np.argsort(np.array(CX))
-                    #     # print(y)
-                    #     F3 = []
-                    #     for i in range(len(x)):
-                    #         F3.append(F1[x[i]])
-                        
-                    #     tt = ""
-                    #     for F in F3:
-                    #         tt += F[0]
-                    #     print(tt)
-                    #     Fcar4.append(F3)
-                    
-                    # for ff in Fcar4:
-                    #     print(ff)
-
-                        
-
-                        
+                pageResultData.append(ResultData2)
+            else:
+                pageResultData.append(ResultData)
 
 
 device.close()

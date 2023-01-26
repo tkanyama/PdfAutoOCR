@@ -91,9 +91,9 @@ device = PDFPageAggregator(resourceManager, laparams=LAParams())
 # PDFから１文字ずつを取得するためのデバイス
 device2 = PDFPageAggregator(resourceManager)
 
-startpage = 192     # 検索を開始する最初のページ
+startpage = 552     # 検索を開始する最初のページ
 # endpage = PageMax   # 検索を終了する最後のページ
-endpage = 200
+endpage = 557
 
 pageResultData = []
 # pageText = []
@@ -136,20 +136,28 @@ with open(pdf_file, 'rb') as fp:
             柱_Flag = False
             梁_Flag = False
             壁_Flag = False
+            杭_Flag = False
             検定比図_Flag = False
             mode = ""
             for lt in layout:
-                # LTTextContainerの場合だけ標準出力
+                # LTTextContainerの場合だけ標準出力　断面算定表(杭基礎)
                 if isinstance(lt, LTTextContainer):
                     texts = lt.get_text()
                     if "柱の断面検定表"in texts :
                         柱_Flag = True
+                        break
                     if  "梁の断面検定表"in texts:
                         梁_Flag = True
+                        break
                     if "壁の断面検定表"in texts :
                         壁_Flag = True
+                        break
+                    if "断面算定表"in texts and "杭基礎"in texts:
+                        杭_Flag = True
+                        break
                     if "検定比図"in texts:
                         検定比図_Flag = True
+                        break
                 
             if 検定比図_Flag:
                 mode = "検定比図"
@@ -159,6 +167,8 @@ with open(pdf_file, 'rb') as fp:
                 mode = "梁の検定表"
             if 壁_Flag :
                 mode = "壁の検定表"
+            if 杭_Flag :
+                mode = "杭の検定表"
         
             if mode == "" :     # 該当しない場合はこのページの処理は飛ばす。
                 print("No Data")
@@ -167,7 +177,7 @@ with open(pdf_file, 'rb') as fp:
                 print(mode)
 
             
-            if mode == "検定比図" or mode == "柱の検定表" or mode == "梁の検定表": 
+            if mode == "検定比図" or mode == "柱の検定表" or mode == "梁の検定表" :
                 
                 for lt in layout:
                     # LTTextContainerの場合だけ標準出力
@@ -176,7 +186,7 @@ with open(pdf_file, 'rb') as fp:
                         words = lt.get_text()
                         datas = lt.get_text().splitlines()
                         data2 = [] 
-                        if mode == "検定比図":
+                        if mode == "検定比図" :
                             for data in datas:                          
                                 data2.append(data.split())
 
@@ -291,6 +301,9 @@ with open(pdf_file, 'rb') as fp:
                         if flag :   # 数値を検出した場合にPrint
                             print('val={:.2f}'.format(val))
 
+            if mode == "杭の検定表":
+                pageFlaf = False
+
 
         if pageFlag : 
             pageNo.append(pageI)
@@ -401,20 +414,23 @@ with open(pdf_file, 'rb') as fp:
                                 n1 += 1
                             
                             # 同じ行にスペースを挟んで複数の数値がある場合にそれらを分けてリストF5を作成
-                            F4 = []
                             F5 = []
-                            n1 = 0
-                            for i in range(len(F3)):
-                                if i < sp[n1] or i == len(F3)-1:
-                                    if F3[i][0] != " ":
-                                        F4.append(F3[i])
-                                else:
-                                    if len(F4)>0:
-                                        F5.append(F4)
-                                    F4 = []
-                                    n1 += 1
-                            if len(F4)>0 :
-                                F5.append(F4)
+                            if len(sp) > 0 :
+                                F4 = []
+                                n1 = 0
+                                for i in range(len(F3)):
+                                    if i < sp[n1] or i == len(F3)-1:
+                                        if F3[i][0] != " ":
+                                            F4.append(F3[i])
+                                    else:
+                                        if len(F4)>0:
+                                            F5.append(F4)
+                                        F4 = []
+                                        n1 += 1
+                                if len(F4)>0 :
+                                    F5.append(F4)
+                            else:
+                                F5.append(F3)
                             
                             # リストF5から該当する検出数値「val」があるかどうかを
                             for FF in F5:

@@ -86,12 +86,14 @@ with open(pdf_file, "rb") as input:
 
 # PDFMinerのツールの準備
 resourceManager = PDFResourceManager()
+# PDFから単語を取得するためのデバイス
 device = PDFPageAggregator(resourceManager, laparams=LAParams())
+# PDFから１文字ずつを取得するためのデバイス
 device2 = PDFPageAggregator(resourceManager)
 
-startpage = 192      # 検索を開始する最初のページ
+startpage = 192     # 検索を開始する最初のページ
 # endpage = PageMax   # 検索を終了する最後のページ
-endpage = 193
+endpage = 200
 
 pageResultData = []
 # pageText = []
@@ -125,7 +127,10 @@ with open(pdf_file, 'rb') as fp:
 
             interpreter.process_page(page)
             layout = device.get_result()
-
+#
+#   このページに「柱の断面検定表」、「梁の断面検定表」、「壁の断面検定表」、「検定比図」の
+#   文字が含まれている場合のみ数値の検索を行う。
+#
             QDL_Flag = False
             検定表_Flag = False
             柱_Flag = False
@@ -155,8 +160,8 @@ with open(pdf_file, 'rb') as fp:
             if 壁_Flag :
                 mode = "壁の検定表"
         
-            if mode == "" :
-                print("Pass")
+            if mode == "" :     # 該当しない場合はこのページの処理は飛ばす。
+                print("No Data")
                 continue
             else:
                 print(mode)
@@ -197,51 +202,23 @@ with open(pdf_file, 'rb') as fp:
                         height = lt.height
 
                         flag = False
-                        i = 0
-                        n1 = 0
-                        # n1 = len(data2)
-                        for data in data2:
-                            # n1 += 1
-                            if not("QAL" in data or "QAS" in data):
-                                n1 += 1
 
-                        n2 = 0
+                        val = 0
                         for d1 in data2:
-                            if len(d1) > n2 : n2 = len(d1)
-
-                        for d1 in data2:
-                            if not("QAL" in d1 or "QAS" in d1):
-                                i += 1
-                            j = 0
                             
                             for d2 in d1:
-                                j += 1
-                                if j > n2 : j=n2
                                 t = d2.replace("(","").replace(")","")
                                 if isfloat(t) or isint(t):
                                     a = float(t)
                                     if a >= limit1 and a < 1.0 :
-                                        xx0 = x0 + (j-1)*width/n2
-                                        # if mode == "柱の検定表" and j == 1 : 
-                                        #     xx0 += 5.0
-                                        yy0 = y1 - height * i / n1
-                                        height2 = height / n1
-                                        if height2 < 7.0 : height2 = 7.0
-                                        width2 =  width/n2
-                                        # text.append(d2)
-                                        ResultData.append([a,[xx0, yy0, width2, height2],False])
-                                        # ResultData.append([a,[x0, y0, width, height],False])
-                                        # ResultData.append([a,[x0, x1, y0, y1],False,t])
+                                        ResultData.append([a,[x0, y0, width, height],False])
                                         flag = True
                                         pageFlag = True
+                                        val = a
 
-                        if flag :
-                            # print("-------")
-                            # print(datas)
-                            print("-------")
-                            print('{}, x0={:.2f}, x1={:.2f}, y0={:.2f}, y1={:.2f}, width={:.2f}, height={:.2f}'.format(
-                                lt.get_text().strip(), lt.x0, lt.x1, lt.y0, lt.y1, lt.width, lt.height))
-                            print("-------")
+                        if flag : # 数値を検出した場合にPrint
+                            print('val={:.2f}'.format(val))
+                            
                 
             elif mode == "壁の検定表":
                 # print("壁")
@@ -251,8 +228,10 @@ with open(pdf_file, 'rb') as fp:
                     if isinstance(lt, LTTextContainer):
                         data0 = lt.get_text()
                         # print(data0)
+                        flag = False
+                        val = 0
                         if QGL_Mode == False:
-                            if "QDL" in data0:
+                            if "QDL" in data0 or "QAL" in data0 or "QDS" in data0 or "QAS" in data0:
 
                                 datas = data0.splitlines()
                                 
@@ -306,28 +285,42 @@ with open(pdf_file, 'rb') as fp:
                                         ResultData.append([c1,[xx0, yy0, width2, height2],True])
                                         # ResultData.append([a,[x0, y0, x1, y1],False])
                                         pageFlag = True
+                                        flag = True
+                                        val = c1
+                        
+                        if flag :   # 数値を検出した場合にPrint
+                            print('val={:.2f}'.format(val))
+
 
         if pageFlag : 
             pageNo.append(pageI)
-            # pageText.append(text)
+            
+            # 表紙および壁以外のページの場合、数値の正確な座標を特定するために、１文字ずつの確認を行う
+
             ResultData2 = []
                 
             if mode != "壁の検定表" and pageI > 1:
+            #
+            #   mode == "検定比図" or mode == "柱の検定表" or mode == "梁の検定表"
+            #
+                # １文字ずつ検出するためのインタープリター
                 interpreter2.process_page(page)
+                # １文字ずつのレイアウトデータを取得
                 layout2 = device2.get_result()
+
                 CharData = []
                 for lt in layout2:
-                    if isinstance(lt, LTChar):
-                        char1 = lt.get_text()
-                        # print('{}, x0={:.2f}, x1={:.2f}, y0={:.2f}, y1={:.2f}, width={:.2f}, height={:.2f}'.format(
-                        #     lt.get_text(), lt.x0, lt.x1, lt.y0, lt.y1, lt.width, lt.height))
-                        cfalg = False
-                        if isint(char1) or char1 == "." or char1 == "(" or char1 == ")":
+                    if isinstance(lt, LTChar):  # レイアウトデータうち、LTCharのみを取得
+                        char1 = lt.get_text()   # レイアウトデータに含まれる全文字を取得
+                        # cfalg = False
+
+                        # 全文字データから０から９までの文字とピリオド、空白文字、カッコ文字のみを抽出
+                        if isint(char1) or char1 == "." or char1 == " "  or char1 == "(" or char1 == ")":
                             CharData.append([char1, lt.x0, lt.x1, lt.y0, lt.y1])
-                        # CharData.append([char1, lt.x0, lt.x1, lt.y0, lt.y1])
-                
+                        
+                # 数値の間出結果（ResultData）を一つずつ座標検査を行う。
                 for R1 in ResultData:
-                    val = R1[0]
+                    val = R1[0]     # 検出数値
                     xx0 = R1[1][0]
                     yy0 = R1[1][1]
                     ww1 = R1[1][2]
@@ -336,8 +329,9 @@ with open(pdf_file, 'rb') as fp:
                     yy1 = yy0 + hh1
                     flag = R1[2]
                     R2 = []
-                    # char1 = R1[3]
 
+                    # 文字データのうち、上記の xx0,yy0,xx1,yy1 の座標内にある文字のみを抽出し、CharData2を作成
+                    # その際、CharData2をY座標の高さ順に並び替えるためのリスト「CY」を作成
                     CharData2=[]
                     CY = []
                     for cdata in CharData:
@@ -349,87 +343,127 @@ with open(pdf_file, 'rb') as fp:
                         if x0 >= xx0-1.0 and x1 <= xx1+1.0 and y0 >= yy0-1.0 and y1 <= yy1+1.0:
                             CharData2.append(cdata)
                             CY.append(y0)
+                    
+                    # リスト「CY」から降順の並び替えインデックッスを取得
                     y=np.argsort(np.array(CY))[::-1]
 
-                    if len(CharData2)>0:
+                    if len(CharData2) > 0:  # リストが空でない場合に処理を行う
                         CharData3 = []
-                        # インデックスを用いて並べ替え
+                        # インデックスを用いて並べ替えた「CharData3」を作成
                         for i in range(len(y)):
                             CharData3.append(CharData2[y[i]])
 
-
+                        # 同じ高さのY座標毎にデータをまとめる２次元のリストを作成
                         CharData4 = []
-                        gy = CharData3[0][3]
-                        Fline = []
-                        Fline.append(CharData[0])
                         i = 0
                         for f in CharData3:
-                            if i==0 :
+                            if i==0 :   # 最初の文字のY座標を基準値に採用し、仮のリストを初期化
                                 Fline = []
                                 Fline.append(f)
                                 gy = f[3]
                             else:
-                                if f[3]== gy:
+                                if f[3]== gy:   # 同じY座標の場合は、リストに文字を追加
                                     Fline.append(f)
-                                else:
-                                    CharData4.append(Fline)                             
+                                else:           # Y座標が異なる場合は、リストを「CharData4」を保存し、仮のリストを初期化
+                                    if len(Fline) >= 4:
+                                        CharData4.append(Fline)
                                     gy = f[3]
                                     Fline = []
                                     Fline.append(f)
                             i += 1
-                        if len(Fline) > 0:
+                        # 仮のリストが残っている場合は、リストを「CharData4」を保存
+                        if len(Fline) >= 4:
                             CharData4.append(Fline)
-                        # print(CharData4)
 
-                        # CharData5 = []
-                        t1 = []
-                        for F1 in CharData4:
-                            # if F1[0] != " ":
-                            xd = 3
-                            # else:
-                            #     xd = 0
-                            CX = []
+                        xd = 3      #  X座標の左右に加える余白のサイズ（ポイント）を設定
                             
+                        # 次にX座標の順番にデータを並び替える（昇順）
+                        t1 = []
+                        for F1 in CharData4:    # Y座標が同じデータを抜き出す。                        
+                            CX = []         # 各データのX座標のデータリストを作成
                             for F2 in F1:
                                 CX.append(F2[1])
                             
+                            # リスト「CX」から降順の並び替えインデックッスを取得
                             x=np.argsort(np.array(CX))
-                            # print(y)
+                            
+                            # インデックスを用いて並べ替えた「F3」を作成
                             F3 = []
                             for i in range(len(x)):
                                 F3.append(F1[x[i]])
-                            t2 = ""
-                            xxx0 = 100000.0
-                            yyy0 = 100000.0
-                            xxx1 = -100000.0
-                            yyy1 = -100000.0
-                            for f4 in F3:
-                                t2 += f4[0]
-                                if f4[1] < xxx0: xxx0 = f4[1]
-                                if f4[2] > xxx1: xxx1 = f4[2]
-                                if f4[3] < yyy0: yyy0 = f4[3]
-                                if f4[4] > yyy1: yyy1 = f4[4]
-                            xxx0 -= xd
-                            xxx1 += xd
-                            ww1 = xxx1-xxx0
-                            hh1 = yyy1-yyy0
-                            t1.append(t2)
-                            # print(t2)
-                        
-                            if val == float(t2.replace("(","").replace(")","").replace(" ","")):
-                                # R2 = [val ,[xxx0,yyy0,xxx1-xxx0,yyy1-yyy1],flag]
-                                # ResultData2.append[R2]
-                                ResultData2.append([val ,[xxx0,yyy0,ww1,hh1],flag])
-                                            
-                                break
+                            
+                            # データリストのスペースの位置を抽出
+                            sp = []
+                            n1 = 0
+                            for ff in F3:
+                                if ff[0] == " ":
+                                    sp.append(n1)
+                                n1 += 1
+                            
+                            # 同じ行にスペースを挟んで複数の数値がある場合にそれらを分けてリストF5を作成
+                            F4 = []
+                            F5 = []
+                            n1 = 0
+                            for i in range(len(F3)):
+                                if i < sp[n1] or i == len(F3)-1:
+                                    if F3[i][0] != " ":
+                                        F4.append(F3[i])
+                                else:
+                                    if len(F4)>0:
+                                        F5.append(F4)
+                                    F4 = []
+                                    n1 += 1
+                            if len(F4)>0 :
+                                F5.append(F4)
+                            
+                            # リストF5から該当する検出数値「val」があるかどうかを
+                            for FF in F5:
+                                if len(FF) > 0:
+                                    t2 = ""
+                                    xxx0 = 100000.0
+                                    yyy0 = 100000.0
+                                    xxx1 = -100000.0
+                                    yyy1 = -100000.0
+                                    for f4 in FF:
+                                        t2 += f4[0]
+                                        if f4[1] < xxx0: xxx0 = f4[1]
+                                        if f4[2] > xxx1: xxx1 = f4[2]
+                                        if f4[3] < yyy0: yyy0 = f4[3]
+                                        if f4[4] > yyy1: yyy1 = f4[4]
+
+                                    #  X座標の左右に加える余白を追加
+                                    xxx0 -= xd
+                                    xxx1 += xd
+
+                                    ww1 = xxx1-xxx0
+                                    hh1 = yyy1-yyy0
+                                    t1.append(t2)
+                                    # print(t2)
+
+                                    if isfloat(t2):     # t2が数値の場合のみを処理
+                                        if val == float(t2.replace("(","").replace(")","").replace(" ","")):
+                                            #  検出数値「val」と一致する場合にデータを追加
+                                            ResultData2.append([val ,[xxx0,yyy0,ww1,hh1],flag])
+                                            break   #数値が見つかったのでループを抜け出す
+
+                # 数値検出結果をページ毎のデータに追加
                 pageResultData.append(ResultData2)
+
             else:
+            #
+            #   mode == "壁の検定表" 
+            #
+                # "壁の検定表"の場合はそのまま数値検出結果をページ毎のデータに追加
                 pageResultData.append(ResultData)
 
-
+# 使用したデバイスをクローズ
 device.close()
 device2.close()
-# print(pageText)
+
+#============================================================================================
+#
+#   数値検出結果を用いて各ページに四角形を描画する
+#
 
 in_path = pdf_file
 out_path = pdf_out_file
@@ -452,18 +486,23 @@ for pageI in range(len(pageNo)):
     rl_obj = makerl(cc, pp) # ReportLabオブジェクトへの変換  
     cc.doForm(rl_obj) # 展開
 
-    if pageN == 1:
+    if pageN == 1:  # 表紙に「"検定比（0.##以上）の検索結果」の文字を印字
         cc.setFillColor("red")
         font_name = "ipaexg"
         cc.setFont(font_name, 20)
         cc.drawString(20 * mm,  pageSizeY - 40 * mm, "検定比（{}以上）の検索結果".format(limit1))
-    else:
+
+    else:   # ２ページ目以降は以下の処理
         pn = len(ResultData)
+
+        # ページの左肩に検出個数を印字
         cc.setFillColor("red")
         font_name = "ipaexg"
         cc.setFont(font_name, 12)
         t2 = "検索個数 = {}".format(pn)
         cc.drawString(20 * mm,  pageSizeY - 15 * mm, t2)
+
+        # 該当する座標に四角形を描画
         for R1 in ResultData:
             a = R1[0]
             origin = R1[1]
@@ -478,7 +517,7 @@ for pageI in range(len(pageNo)):
             cc.setStrokeColorRGB(1.0, 0, 0)
             cc.rect(x0, y0, width, height, fill=0)
 
-            if flag:
+            if flag:    # "壁の検定表"の場合は、四角形の右肩に数値を印字
                 cc.setFillColor("red")
                 font_name = "ipaexg"
                 cc.setFont(font_name, 7)

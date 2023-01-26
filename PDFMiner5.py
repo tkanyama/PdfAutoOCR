@@ -20,7 +20,7 @@ from reportlab.lib.units import mm
 
 # pip install PyPDF2
 from PyPDF2 import PdfReader as PR2 # 名前が上とかぶるので別名を使用
-
+import os
 import time
 
 import numpy as np
@@ -66,9 +66,11 @@ pdfmetrics.registerFont(TTFont('ipaexg', IPAEXG_TTF))
 print(pdfmetrics.getRegisteredFontNames())
 
 # 対象PDFファイル設定
-pdf_file = './サンプル計算書(1).pdf'
+pdf_file = './サンプル計算書(1)a.pdf'
 # 検出結果ファイル設定
-pdf_out_file = 'サンプル計算書(1)[検索結果].pdf'
+# pdf_out_file = 'サンプル計算書(1)[検索結果].pdf'
+# pdf_file = FileName
+pdf_out_file = os.path.splitext(pdf_file)[0] + '[検出結果].pdf'
 
 # PyPDF2のツールを使用してPDFのページ情報を読み取る。
 with open(pdf_file, "rb") as input:
@@ -83,6 +85,9 @@ with open(pdf_file, "rb") as input:
         y1 = page.mediabox.upper_right[1]
         PaperSize.append([x1 - x0 , y1 - y0])
 
+startpage = 100     # 検索を開始する最初のページ
+endpage = PageMax   # 検索を終了する最後のページ
+# endpagsse = 557
 
 # PDFMinerのツールの準備
 resourceManager = PDFResourceManager()
@@ -90,10 +95,6 @@ resourceManager = PDFResourceManager()
 device = PDFPageAggregator(resourceManager, laparams=LAParams())
 # PDFから１文字ずつを取得するためのデバイス
 device2 = PDFPageAggregator(resourceManager)
-
-startpage = 552     # 検索を開始する最初のページ
-# endpage = PageMax   # 検索を終了する最後のページ
-endpage = 557
 
 pageResultData = []
 # pageText = []
@@ -415,7 +416,7 @@ with open(pdf_file, 'rb') as fp:
                             
                             # 同じ行にスペースを挟んで複数の数値がある場合にそれらを分けてリストF5を作成
                             F5 = []
-                            if len(sp) > 0 :
+                            if len(sp) > 0 and sp[0] != 0:
                                 F4 = []
                                 n1 = 0
                                 for i in range(len(F3)):
@@ -427,6 +428,8 @@ with open(pdf_file, 'rb') as fp:
                                             F5.append(F4)
                                         F4 = []
                                         n1 += 1
+                                        if n1 > len(sp) - 1:
+                                            break
                                 if len(F4)>0 :
                                     F5.append(F4)
                             else:
@@ -441,11 +444,12 @@ with open(pdf_file, 'rb') as fp:
                                     xxx1 = -100000.0
                                     yyy1 = -100000.0
                                     for f4 in FF:
-                                        t2 += f4[0]
-                                        if f4[1] < xxx0: xxx0 = f4[1]
-                                        if f4[2] > xxx1: xxx1 = f4[2]
-                                        if f4[3] < yyy0: yyy0 = f4[3]
-                                        if f4[4] > yyy1: yyy1 = f4[4]
+                                        if f4[0] != " ":
+                                            t2 += f4[0]
+                                            if f4[1] < xxx0: xxx0 = f4[1]
+                                            if f4[2] > xxx1: xxx1 = f4[2]
+                                            if f4[3] < yyy0: yyy0 = f4[3]
+                                            if f4[4] > yyy1: yyy1 = f4[4]
 
                                     #  X座標の左右に加える余白を追加
                                     xxx0 -= xd

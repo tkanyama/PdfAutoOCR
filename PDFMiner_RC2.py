@@ -85,9 +85,9 @@ with open(pdf_file, "rb") as input:
         page_ymax = float(page.mediabox.upper_right[1])
         PaperSize.append([page_xmax - page_xmin , page_ymax - page_ymin])
 
-startpage = 209     # 検索を開始する最初のページ
+startpage = 150     # 検索を開始する最初のページ
 # endpage = PageMax   # 検索を終了する最後のページ
-endpage = 210
+endpage = 250
 
 # PDFMinerのツールの準備
 resourceManager = PDFResourceManager()

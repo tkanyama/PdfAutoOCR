@@ -47,6 +47,89 @@ def isint(s):
     else:
         return True
 
+def MakeCha(page, interpreter,device):
+
+    interpreter.process_page(page)
+    # １文字ずつのレイアウトデータを取得
+    layout2 = device.get_result()
+
+    CharData = []
+    for lt in layout2:
+        if isinstance(lt, LTChar):  # レイアウトデータうち、LTCharのみを取得
+            char1 = lt.get_text()   # レイアウトデータに含まれる全文字を取得
+            # if lt.x0 >= page_xmax/2.0:  # ページの右半分の文字だけを取得
+            CharData.append([char1, lt.x0, lt.x1, lt.y0, lt.y1])
+
+    # その際、CharData2をY座標の高さ順に並び替えるためのリスト「CY」を作成
+    CharData2=[]
+    CY = []
+    for cdata in CharData:
+        char2 = cdata[0]
+        x0 = cdata[1]
+        x1 = cdata[2]
+        y0 = cdata[3]
+        y1 = cdata[4]
+        
+        CharData2.append(cdata)
+        CY.append(int(y0))
+    
+    # リスト「CY」から降順の並び替えインデックッスを取得
+    y=np.argsort(np.array(CY))[::-1]
+
+    if len(CharData2) > 0:  # リストが空でない場合に処理を行う
+        CharData3 = []
+        # インデックスを用いて並べ替えた「CharData3」を作成
+        for i in range(len(y)):
+            CharData3.append(CharData2[y[i]])
+
+        # 同じ高さのY座標毎にデータをまとめる２次元のリストを作成
+        CharData4 = []
+        i = 0
+        for f in CharData3:
+            if i==0 :   # 最初の文字のY座標を基準値に採用し、仮のリストを初期化
+                Fline = []
+                Fline.append(f)
+                gy = int(f[3])
+            else:
+                if int(f[3])== gy:   # 同じY座標の場合は、リストに文字を追加
+                    Fline.append(f)
+                else:           # Y座標が異なる場合は、リストを「CharData4」を保存し、仮のリストを初期化
+                    if len(Fline) >= 4:
+                        CharData4.append(Fline)
+                    gy = int(f[3])
+                    Fline = []
+                    Fline.append(f)
+            i += 1
+        # 仮のリストが残っている場合は、リストを「CharData4」を保存
+        if len(Fline) >= 4:
+            CharData4.append(Fline)
+
+        # 次にX座標の順番にデータを並び替える（昇順）
+        t1 = []
+        CharData5 = []
+        for F1 in CharData4:    # Y座標が同じデータを抜き出す。                        
+            CX = []         # 各データのX座標のデータリストを作成
+            for F2 in F1:
+                CX.append(F2[1])
+            
+            # リスト「CX」から降順の並び替えインデックッスを取得
+            x=np.argsort(np.array(CX))
+            
+            # インデックスを用いて並べ替えた「F3」を作成
+            F3 = []
+            t2 = ""
+            for i in range(len(x)):
+                F3.append(F1[x[i]])
+                t3 = F1[x[i]][0]
+                t2 += t3
+            # t1 += t2 + "\n"
+            t1.append([t2])
+            # print(t2,len(F3))
+            CharData5.append(F3)
+    
+    return t1 , CharData5
+
+
 
 #============================================================================
 #  プログラムの開始
@@ -86,8 +169,8 @@ with open(pdf_file, "rb") as input:
         PaperSize.append([page_xmax - page_xmin , page_ymax - page_ymin])
 
 startpage = 150     # 検索を開始する最初のページ
-endpage = PageMax   # 検索を終了する最後のページ
-# endpage = 250
+# endpage = PageMax   # 検索を終了する最後のページ
+endpage = 250
 
 # PDFMinerのツールの準備
 resourceManager = PDFResourceManager()
@@ -182,85 +265,10 @@ with open(pdf_file, 'rb') as fp:
 
             
             if mode == "検定比図" :
-                interpreter2.process_page(page)
-                # １文字ずつのレイアウトデータを取得
-                layout2 = device2.get_result()
 
-                CharData = []
-                for lt in layout2:
-                    if isinstance(lt, LTChar):  # レイアウトデータうち、LTCharのみを取得
-                        char1 = lt.get_text()   # レイアウトデータに含まれる全文字を取得
-                        # if lt.x0 >= page_xmax/2.0:  # ページの右半分の文字だけを取得
-                        CharData.append([char1, lt.x0, lt.x1, lt.y0, lt.y1])
+                t1 , CharData5 = MakeCha(page, interpreter2,device2)
 
-                # その際、CharData2をY座標の高さ順に並び替えるためのリスト「CY」を作成
-                CharData2=[]
-                CY = []
-                for cdata in CharData:
-                    char2 = cdata[0]
-                    x0 = cdata[1]
-                    x1 = cdata[2]
-                    y0 = cdata[3]
-                    y1 = cdata[4]
-                    
-                    CharData2.append(cdata)
-                    CY.append(int(y0))
-                
-                # リスト「CY」から降順の並び替えインデックッスを取得
-                y=np.argsort(np.array(CY))[::-1]
-
-                if len(CharData2) > 0:  # リストが空でない場合に処理を行う
-                    CharData3 = []
-                    # インデックスを用いて並べ替えた「CharData3」を作成
-                    for i in range(len(y)):
-                        CharData3.append(CharData2[y[i]])
-
-                    # 同じ高さのY座標毎にデータをまとめる２次元のリストを作成
-                    CharData4 = []
-                    i = 0
-                    for f in CharData3:
-                        if i==0 :   # 最初の文字のY座標を基準値に採用し、仮のリストを初期化
-                            Fline = []
-                            Fline.append(f)
-                            gy = int(f[3])
-                        else:
-                            if int(f[3])== gy:   # 同じY座標の場合は、リストに文字を追加
-                                Fline.append(f)
-                            else:           # Y座標が異なる場合は、リストを「CharData4」を保存し、仮のリストを初期化
-                                if len(Fline) >= 4:
-                                    CharData4.append(Fline)
-                                gy = int(f[3])
-                                Fline = []
-                                Fline.append(f)
-                        i += 1
-                    # 仮のリストが残っている場合は、リストを「CharData4」を保存
-                    if len(Fline) >= 4:
-                        CharData4.append(Fline)
-
-                    # 次にX座標の順番にデータを並び替える（昇順）
-                    t1 = []
-                    CharData5 = []
-                    for F1 in CharData4:    # Y座標が同じデータを抜き出す。                        
-                        CX = []         # 各データのX座標のデータリストを作成
-                        for F2 in F1:
-                            CX.append(F2[1])
-                        
-                        # リスト「CX」から降順の並び替えインデックッスを取得
-                        x=np.argsort(np.array(CX))
-                        
-                        # インデックスを用いて並べ替えた「F3」を作成
-                        F3 = []
-                        t2 = ""
-                        for i in range(len(x)):
-                            F3.append(F1[x[i]])
-                            t3 = F1[x[i]][0]
-                            t2 += t3
-                        # t1 += t2 + "\n"
-                        t1.append([t2])
-                        # print(t2,len(F3))
-                        CharData5.append(F3)
-
-                    # lines =t1.splitlines()
+                if len(t1) > 0:
                     i = -1
                     for line in t1:
                         i += 1
@@ -304,147 +312,13 @@ with open(pdf_file, 'rb') as fp:
 
                                 # 数値を検索を開始するを文字数分移動
                                 st = nn + ln + 1
-                                
-
-
-
-
-
-
-
-
-
-
-
-                # for lt in layout:
-                #     # LTTextContainerの場合だけ標準出力
-                #     if isinstance(lt, LTTextContainer):
-                        
-                #         words = lt.get_text()
-                #         datas = lt.get_text().splitlines()
-                #         data2 = [] 
-                #         if mode == "検定比図" :
-                #             for data in datas:                          
-                #                 data2.append(data.split())
-
-                #         # elif mode == "柱の検定表":        
-                #         #     if "検定比" in words:
-                #         #         for data in datas:
-                #         #             data2.append(data.split())
-                                    
-                #         # else:        
-                #         #     if "検定比" in words:
-                #         #         for data in datas:
-                #         #             if "検定比" in data:
-                #         #                 data2.append(data.split())
-                #         #             else:
-                #         #                 data2.append([""])
-
-                #         # words = lt.get_text().split()
-                #         x0 = lt.x0
-                #         x1 = lt.x1
-                #         y0 = lt.y0
-                #         y1 = lt.y1
-                #         width = lt.width
-                #         height = lt.height
-
-                #         flag = False
-
-                #         val = 0
-                #         for d1 in data2:
-                            
-                #             for d2 in d1:
-                #                 t = d2.replace("(","").replace(")","")
-                #                 if isfloat(t) or isint(t):
-                #                     a = float(t)
-                #                     if a >= limit1 and a < 1.0 :
-                #                         ResultData.append([a,[x0, y0, width, height],False])
-                #                         flag = True
-                #                         pageFlag = True
-                #                         val = a
-
-                #         if flag : # 数値を検出した場合にPrint
-                #             print('val={:.2f}'.format(val))
+                    
                             
             elif mode == "柱の検定表" : 
-                interpreter2.process_page(page)
-                # １文字ずつのレイアウトデータを取得
-                layout2 = device2.get_result()
 
-                CharData = []
-                for lt in layout2:
-                    if isinstance(lt, LTChar):  # レイアウトデータうち、LTCharのみを取得
-                        char1 = lt.get_text()   # レイアウトデータに含まれる全文字を取得
-                        # if lt.x0 >= page_xmax/2.0:  # ページの右半分の文字だけを取得
-                        CharData.append([char1, lt.x0, lt.x1, lt.y0, lt.y1])
-
-                # その際、CharData2をY座標の高さ順に並び替えるためのリスト「CY」を作成
-                CharData2=[]
-                CY = []
-                for cdata in CharData:
-                    char2 = cdata[0]
-                    x0 = cdata[1]
-                    x1 = cdata[2]
-                    y0 = cdata[3]
-                    y1 = cdata[4]
-                    
-                    CharData2.append(cdata)
-                    CY.append(int(y0))
+                t1 , CharData5 = MakeCha(page, interpreter2,device2)
                 
-                # リスト「CY」から降順の並び替えインデックッスを取得
-                y=np.argsort(np.array(CY))[::-1]
-
-                if len(CharData2) > 0:  # リストが空でない場合に処理を行う
-                    CharData3 = []
-                    # インデックスを用いて並べ替えた「CharData3」を作成
-                    for i in range(len(y)):
-                        CharData3.append(CharData2[y[i]])
-
-                    # 同じ高さのY座標毎にデータをまとめる２次元のリストを作成
-                    CharData4 = []
-                    i = 0
-                    for f in CharData3:
-                        if i==0 :   # 最初の文字のY座標を基準値に採用し、仮のリストを初期化
-                            Fline = []
-                            Fline.append(f)
-                            gy = int(f[3])
-                        else:
-                            if int(f[3])== gy:   # 同じY座標の場合は、リストに文字を追加
-                                Fline.append(f)
-                            else:           # Y座標が異なる場合は、リストを「CharData4」を保存し、仮のリストを初期化
-                                if len(Fline) >= 4:
-                                    CharData4.append(Fline)
-                                gy = int(f[3])
-                                Fline = []
-                                Fline.append(f)
-                        i += 1
-                    # 仮のリストが残っている場合は、リストを「CharData4」を保存
-                    if len(Fline) >= 4:
-                        CharData4.append(Fline)
-
-                    # 次にX座標の順番にデータを並び替える（昇順）
-                    t1 = []
-                    CharData5 = []
-                    for F1 in CharData4:    # Y座標が同じデータを抜き出す。                        
-                        CX = []         # 各データのX座標のデータリストを作成
-                        for F2 in F1:
-                            CX.append(F2[1])
-                        
-                        # リスト「CX」から降順の並び替えインデックッスを取得
-                        x=np.argsort(np.array(CX))
-                        
-                        # インデックスを用いて並べ替えた「F3」を作成
-                        F3 = []
-                        t2 = ""
-                        for i in range(len(x)):
-                            F3.append(F1[x[i]])
-                            t3 = F1[x[i]][0]
-                            t2 += t3
-                        # t1 += t2 + "\n"
-                        t1.append([t2])
-                        # print(t2,len(F3))
-                        CharData5.append(F3)
-
+                if len(t1) > 0:
                     # lines =t1.splitlines()
                     i = -1
                     kmode = False
@@ -550,83 +424,10 @@ with open(pdf_file, 'rb') as fp:
                                     
                                 
             elif mode == "梁の検定表" : 
-                interpreter2.process_page(page)
-                # １文字ずつのレイアウトデータを取得
-                layout2 = device2.get_result()
 
-                CharData = []
-                for lt in layout2:
-                    if isinstance(lt, LTChar):  # レイアウトデータうち、LTCharのみを取得
-                        char1 = lt.get_text()   # レイアウトデータに含まれる全文字を取得
-                        # if lt.x0 >= page_xmax/2.0:  # ページの右半分の文字だけを取得
-                        CharData.append([char1, lt.x0, lt.x1, lt.y0, lt.y1])
-
-                # その際、CharData2をY座標の高さ順に並び替えるためのリスト「CY」を作成
-                CharData2=[]
-                CY = []
-                for cdata in CharData:
-                    char2 = cdata[0]
-                    x0 = cdata[1]
-                    x1 = cdata[2]
-                    y0 = cdata[3]
-                    y1 = cdata[4]
-                    
-                    CharData2.append(cdata)
-                    CY.append(int(y0))
+                t1 , CharData5 = MakeCha(page, interpreter2,device2)
                 
-                # リスト「CY」から降順の並び替えインデックッスを取得
-                y=np.argsort(np.array(CY))[::-1]
-
-                if len(CharData2) > 0:  # リストが空でない場合に処理を行う
-                    CharData3 = []
-                    # インデックスを用いて並べ替えた「CharData3」を作成
-                    for i in range(len(y)):
-                        CharData3.append(CharData2[y[i]])
-
-                    # 同じ高さのY座標毎にデータをまとめる２次元のリストを作成
-                    CharData4 = []
-                    i = 0
-                    for f in CharData3:
-                        if i==0 :   # 最初の文字のY座標を基準値に採用し、仮のリストを初期化
-                            Fline = []
-                            Fline.append(f)
-                            gy = int(f[3])
-                        else:
-                            if int(f[3])== gy:   # 同じY座標の場合は、リストに文字を追加
-                                Fline.append(f)
-                            else:           # Y座標が異なる場合は、リストを「CharData4」を保存し、仮のリストを初期化
-                                if len(Fline) >= 4:
-                                    CharData4.append(Fline)
-                                gy = int(f[3])
-                                Fline = []
-                                Fline.append(f)
-                        i += 1
-                    # 仮のリストが残っている場合は、リストを「CharData4」を保存
-                    if len(Fline) >= 4:
-                        CharData4.append(Fline)
-
-                    # 次にX座標の順番にデータを並び替える（昇順）
-                    t1 = []
-                    CharData5 = []
-                    for F1 in CharData4:    # Y座標が同じデータを抜き出す。                        
-                        CX = []         # 各データのX座標のデータリストを作成
-                        for F2 in F1:
-                            CX.append(F2[1])
-                        
-                        # リスト「CX」から降順の並び替えインデックッスを取得
-                        x=np.argsort(np.array(CX))
-                        
-                        # インデックスを用いて並べ替えた「F3」を作成
-                        F3 = []
-                        t2 = ""
-                        for i in range(len(x)):
-                            F3.append(F1[x[i]])
-                            t3 = F1[x[i]][0]
-                            t2 += t3
-                        # t1 += t2 + "\n"
-                        t1.append([t2])
-                        # print(t2,len(F3))
-                        CharData5.append(F3)
+                if len(t1) > 0:
 
                     # lines =t1.splitlines()
                     i = -1
@@ -665,21 +466,6 @@ with open(pdf_file, 'rb') as fp:
                                     # 数値を検索を開始するを文字数分移動
                                     st += ln
                                     
-                                
-
-
-
-                    
-
-
-
-
-
-
-
-
-
-
 
             elif mode == "壁の検定表":
                 # print("壁")

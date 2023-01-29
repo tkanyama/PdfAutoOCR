@@ -86,7 +86,7 @@ with open(pdf_file, "rb") as input:
 resourceManager = PDFResourceManager()
 device = PDFPageAggregator(resourceManager, laparams=LAParams())
 
-startpage = 30      # 検索を開始する最初のページ
+startpage = 182      # 検索を開始する最初のページ
 endpage = PageMax   # 検索を終了する最後のページ
 
 pageResultData = []
